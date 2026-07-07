@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitud de Pedidos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="form-container">
+    <form id="solicitudForm" novalidate>
+
+      <header class="form-header">
+        <div class="header-marca">
+          <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
+          <h1>SOLICITUD DE PEDIDOS</h1>
+        </div>
+
+        <div class="header-grid">
+          <div class="field-group">
+            <label for="numero">Nº</label>
+            <input type="text" id="numero" name="numero" readonly>
+            <span class="hint">(*correlativa por selección lógica)</span>
+          </div>
+
+          <div class="field-group">
+            <label for="fecha">FECHA</label>
+            <input type="date" id="fecha" name="fecha" readonly>
+            <span class="hint">(*actual por selección lógica)</span>
+          </div>
+
+          <div class="field-group">
+            <label for="sector">SECTOR SOLICITANTE</label>
+            <select id="sector" name="sector" required></select>
+          </div>
+
+          <div class="field-group">
+            <label for="tipoCompra">TIPO DE PEDIDOS</label>
+            <select id="tipoCompra" name="tipoCompra" required></select>
+          </div>
+        </div>
+
+        <fieldset class="ordenador-fieldset" id="bloqueOrdenador">
+          <legend>ORDENADOR</legend>
+          <div class="ordenador-options">
+            <label data-ordenador="gerencia"><input type="radio" name="ordenador" value="gerencia"> <span class="ordenador-texto">Gerencia</span></label>
+            <label data-ordenador="direccion_tecnica"><input type="radio" name="ordenador" value="direccion_tecnica"> <span class="ordenador-texto">Dirección Técnica</span></label>
+            <label data-ordenador="consejo_directivo"><input type="radio" name="ordenador" value="consejo_directivo"> <span class="ordenador-texto">Consejo Directivo</span></label>
+          </div>
+          <span class="hint" id="hintOrdenador">Al enviar, la solicitud irá al panel de autorización del ordenador seleccionado</span>
+        </fieldset>
+        <p id="avisoStock" class="aviso-stock" hidden>
+          Los pedidos <strong>COMPRA STOCK</strong> no requieren autorización del ordenador. Al enviar irán directamente a <strong>Pedidos Stock</strong>.
+        </p>
+      </header>
+
+      <section class="productos-section">
+        <div class="table-wrapper">
+          <table id="tablaProductos">
+            <thead>
+              <tr>
+                <th class="col-cod">CÓD.</th>
+                <th class="col-cant">CANT.</th>
+                <th class="col-desc">DESCRIPCIÓN PRODUCTO</th>
+                <th class="col-urgente" title="Ítem urgente">!</th>
+                <th class="col-obs">OBS. (Foto, PDF)</th>
+                <th class="col-ref">REF.</th>
+                <th class="col-accion"></th>
+              </tr>
+            </thead>
+            <tbody id="productosBody"></tbody>
+          </table>
+        </div>
+
+        <button type="button" id="btnAgregarFila" class="btn-link">
+          AGREGAR FILA <span class="arrow">→</span>
+        </button>
+
+        <p class="nota-codigo">* Ingresar código únicamente si tiene conocimiento del correspondiente</p>
+      </section>
+
+      <footer class="form-footer">
+        <div class="field-group field-full">
+          <label for="justificacionUrgente">
+            <span class="icon-urgente" aria-hidden="true">!</span>
+            Justificar motivo items urgentes <span class="required" id="asteriscoJustificacionUrgente" hidden>*</span>
+          </label>
+          <textarea id="justificacionUrgente" name="justificacionUrgente" rows="2"
+                    placeholder="Completar si hay ítems marcados como urgentes"></textarea>
+        </div>
+
+        <div class="field-group field-full">
+          <label for="justificacionPedido">Justificación pedido <span class="required">*</span></label>
+          <textarea id="justificacionPedido" name="justificacionPedido" rows="3" required></textarea>
+        </div>
+
+        <div class="field-group field-full">
+          <label for="nombreSolicitante">NOMBRE SOLICITANTE <span class="required">*</span></label>
+          <input type="text" id="nombreSolicitante" name="nombreSolicitante" required>
+        </div>
+
+        <div class="field-group field-full">
+          <label for="jefeSector">JEFE SECTOR <span class="required">*</span></label>
+          <input type="text" id="jefeSector" name="jefeSector" required>
+        </div>
+
+        <div class="form-actions">
+          <div class="acciones-principales">
+            <button type="submit" class="btn-enviar">ENVIAR</button>
+            <button type="button" id="btnImprimir" class="btn-secundario">IMPRIMIR</button>
+            <button type="button" id="btnExportarPdf" class="btn-secundario">EXPORTAR PDF</button>
+          </div>
+        </div>
+      </footer>
+
+    </form>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/notificaciones.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

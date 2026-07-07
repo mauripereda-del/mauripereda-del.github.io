@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Autorización — Solicitud de Pedidos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="panel-container">
+    <div id="panelOrdenador"></div>
+
+    <div id="panelFiltros" class="panel-filtros">
+      <label for="filtroEstado">Filtrar por estado:</label>
+      <select id="filtroEstado">
+        <option value="todas">Todas</option>
+        <option value="pendiente" selected>Pendientes</option>
+        <option value="autorizado">Autorizadas</option>
+        <option value="rechazado">Rechazadas</option>
+      </select>
+    </div>
+
+    <section id="listaSolicitudes" class="lista-solicitudes"></section>
+  </main>
+
+  <div id="modalDetalle" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalle">&times;</button>
+      <div id="detalleContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalAutorizacion" class="modal-overlay">
+    <div class="modal-contenido">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalAutorizacion">&times;</button>
+      <h2 id="modalAutorizacionTitulo">Autorizar solicitud</h2>
+
+      <div class="field-group">
+        <label for="nombreOrdenador">Nombre del ordenador <span class="required">*</span></label>
+        <input type="text" id="nombreOrdenador" placeholder="Quien autoriza o rechaza">
+      </div>
+
+      <div class="field-group">
+        <label for="observacionOrdenador">Observación (opcional)</label>
+        <textarea id="observacionOrdenador" rows="3" placeholder="Comentario adicional"></textarea>
+      </div>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnConfirmarAutorizacion" class="btn-enviar">Confirmar</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalAutorizacion">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/notificaciones.js"></script>
+  <script src="js/autorizacion.js"></script>
+</body>
+</html>

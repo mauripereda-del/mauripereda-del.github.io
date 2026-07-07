@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración — Solicitud de Pedidos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="panel-container admin-container">
+    <div class="panel-marca">
+      <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
+    </div>
+
+    <header class="panel-header">
+      <h1>ADMINISTRACIÓN</h1>
+      <p class="panel-subtitulo">Gestione los catálogos de Sector Solicitante y Tipo de Pedidos</p>
+    </header>
+
+    <div class="admin-grid">
+
+      <!-- Sectores -->
+      <section class="admin-seccion">
+        <h2>Sector Solicitante</h2>
+
+        <form id="formSector" class="admin-form">
+          <h3 id="tituloFormSector">Agregar sector</h3>
+          <div class="admin-form-grid">
+            <div class="field-group">
+              <label for="sectorNombre">Nombre <span class="required">*</span></label>
+              <input type="text" id="sectorNombre" required placeholder="Ej: FARMACIA">
+            </div>
+            <div class="field-group">
+              <label for="sectorCodigo">Código</label>
+              <input type="text" id="sectorCodigo" placeholder="Auto si se deja vacío">
+            </div>
+            <div class="field-group">
+              <label for="sectorOrden">Orden</label>
+              <input type="number" id="sectorOrden" min="1" value="1">
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="sectorActivo" checked> Activo</label>
+            </div>
+          </div>
+          <div class="admin-form-acciones">
+            <button type="submit" id="btnGuardarSector" class="btn-enviar">Agregar</button>
+            <button type="button" id="btnCancelarSector" class="btn-secundario" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="admin-tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Orden</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaSectoresBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tipos de pedidos -->
+      <section class="admin-seccion">
+        <h2>Tipo de Pedidos</h2>
+
+        <form id="formTipoCompra" class="admin-form">
+          <h3 id="tituloFormTipo">Agregar tipo de pedido</h3>
+          <div class="admin-form-grid">
+            <div class="field-group">
+              <label for="tipoNombre">Nombre <span class="required">*</span></label>
+              <input type="text" id="tipoNombre" required placeholder="Ej: URGENTE">
+            </div>
+            <div class="field-group">
+              <label for="tipoCodigo">Código</label>
+              <input type="text" id="tipoCodigo" placeholder="Auto si se deja vacío">
+            </div>
+            <div class="field-group">
+              <label for="tipoOrden">Orden</label>
+              <input type="number" id="tipoOrden" min="1" value="1">
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="tipoActivo" checked> Activo</label>
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="tipoEsUrgente"> Requiere justificación urgente</label>
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="tipoEsStock"> Sin autorización (STOCK)</label>
+            </div>
+          </div>
+          <div class="admin-form-acciones">
+            <button type="submit" id="btnGuardarTipo" class="btn-enviar">Agregar</button>
+            <button type="button" id="btnCancelarTipo" class="btn-secundario" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="admin-tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Urgente</th>
+                <th>Stock</th>
+                <th>Orden</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaTiposBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Correos de ordenadores -->
+      <section class="admin-seccion admin-seccion-full">
+        <h2>Notificaciones por correo — Ordenadores</h2>
+        <p class="panel-subtitulo">Al enviar una solicitud se notificará por correo al ordenador seleccionado.</p>
+
+        <form id="formOrdenadoresEmail" class="admin-form">
+          <div class="admin-form-grid">
+            <div class="field-group">
+              <label for="emailGerencia">Gerencia — Correo electrónico</label>
+              <input type="email" id="emailGerencia" placeholder="gerencia@empresa.com">
+            </div>
+            <div class="field-group">
+              <label for="emailDireccionTecnica">Dirección Técnica — Correo electrónico</label>
+              <input type="email" id="emailDireccionTecnica" placeholder="direccion.tecnica@empresa.com">
+            </div>
+            <div class="field-group">
+              <label for="emailConsejo">Consejo Directivo — Correo electrónico</label>
+              <input type="email" id="emailConsejo" placeholder="consejo@empresa.com">
+            </div>
+            <div class="field-group field-full">
+              <label for="apiNotificaciones">URL del servicio de correo</label>
+              <input type="url" id="apiNotificaciones" placeholder="http://localhost:3001/api/notificar-ordenador">
+              <span class="hint">Ejecute el servidor en la carpeta <code>server/</code> con SMTP configurado en <code>.env</code></span>
+            </div>
+          </div>
+          <div class="admin-form-acciones">
+            <button type="submit" class="btn-enviar">Guardar correos</button>
+          </div>
+        </form>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos Stock</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="panel-container">
+    <div class="panel-marca">
+      <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
+    </div>
+    <header class="panel-header">
+      <h1>PEDIDOS COMPRA STOCK</h1>
+      <p class="panel-subtitulo">Pedidos de tipo COMPRA STOCK — no requieren autorización del ordenador</p>
+
+      <div class="panel-filtros">
+        <label for="buscarStock">Buscar:</label>
+        <input type="search" id="buscarStock" placeholder="Nº pedido, solicitante, sector...">
+      </div>
+    </header>
+
+    <section id="listaStock" class="lista-solicitudes"></section>
+  </main>
+
+  <div id="modalDetalle" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalle">&times;</button>
+      <div id="detalleContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalEditar" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalEditar">&times;</button>
+      <h2 id="editTitulo">Editar pedido STOCK</h2>
+
+      <div class="admin-form-grid">
+        <div class="field-group">
+          <label for="editSector">Sector</label>
+          <select id="editSector"></select>
+        </div>
+        <div class="field-group">
+          <label for="editSolicitante">Solicitante</label>
+          <input type="text" id="editSolicitante">
+        </div>
+        <div class="field-group">
+          <label for="editJefeSector">Jefe sector</label>
+          <input type="text" id="editJefeSector">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="editJustificacion">Justificación pedido</label>
+        <textarea id="editJustificacion" rows="2"></textarea>
+      </div>
+
+      <h3 class="subtitulo-tabla">Productos</h3>
+      <div class="table-wrapper">
+        <table class="admin-tabla">
+          <thead>
+            <tr><th>CÓD.</th><th>CANT.</th><th>DESCRIPCIÓN</th><th>REF.</th><th></th></tr>
+          </thead>
+          <tbody id="editProductosBody"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btnAgregarFilaEdit" class="btn-link">+ AGREGAR FILA</button>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnGuardarEdicion" class="btn-enviar">Guardar cambios</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalEditar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCerrarStock" class="modal-overlay">
+    <div class="modal-contenido">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalCerrarStock">&times;</button>
+      <h2 id="cerrarTitulo">Cerrar pedido STOCK</h2>
+
+      <div class="field-group">
+        <label for="stockNumeroOC">Nº Orden de Compra / Referencia <span class="required">*</span></label>
+        <input type="text" id="stockNumeroOC" placeholder="Ej: OC-2025-00123">
+      </div>
+
+      <div class="field-group">
+        <label for="stockObservaciones">Observaciones</label>
+        <textarea id="stockObservaciones" rows="2"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>PDF Orden / Cotización</label>
+        <div class="adjunto-oc-controls">
+          <button type="button" id="btnAdjuntarStock" class="btn-adjuntar">+ Adjuntar PDF</button>
+          <input type="file" id="inputAdjuntoStock" class="input-archivo-oculto" accept=".pdf,application/pdf">
+        </div>
+        <div id="previewAdjuntoStock" class="lista-adjuntos"></div>
+      </div>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnConfirmarCerrarStock" class="btn-enviar">CERRAR PEDIDO</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalCerrarStock">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pedidos-stock.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos Autorizados — Compras</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="panel-container">
+    <div class="panel-marca">
+      <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
+    </div>
+    <header class="panel-header">
+      <h1>PEDIDOS AUTORIZADOS</h1>
+      <p class="panel-subtitulo">Sector Compras — Gestione pedidos autorizados por el ordenador</p>
+
+      <div class="panel-filtros">
+        <label for="buscarPedido">Buscar:</label>
+        <input type="search" id="buscarPedido" placeholder="Nº solicitud, OC, solicitante, sector...">
+      </div>
+    </header>
+
+    <section id="listaPedidos" class="lista-solicitudes"></section>
+  </main>
+
+  <div id="modalDetalle" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalle">&times;</button>
+      <div id="detalleContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalGestion" class="modal-overlay">
+    <div class="modal-contenido">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalGestion">&times;</button>
+      <h2 id="gestionTitulo">Gestión pedido</h2>
+
+      <div class="field-group">
+        <label for="numeroOrdenCompra">Nº Orden de Compra <span class="required">*</span></label>
+        <input type="text" id="numeroOrdenCompra" placeholder="Ej: OC-2025-00123">
+      </div>
+
+      <div class="field-group">
+        <label for="observacionesCompras">Observaciones</label>
+        <textarea id="observacionesCompras" rows="3" placeholder="Notas del sector Compras"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>PDF Orden / Cotización</label>
+        <div class="adjunto-oc-controls">
+          <button type="button" id="btnAdjuntarOC" class="btn-adjuntar">+ Adjuntar PDF</button>
+          <input type="file" id="inputAdjuntoOC" class="input-archivo-oculto" accept=".pdf,application/pdf">
+        </div>
+        <div id="previewAdjuntoOC" class="lista-adjuntos"></div>
+      </div>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnCerrarPedido" class="btn-enviar">CERRAR PEDIDO</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalGestion">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pedidos-autorizados.js"></script>
+</body>
+</html>
