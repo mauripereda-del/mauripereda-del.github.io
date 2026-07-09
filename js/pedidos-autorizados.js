@@ -14,6 +14,10 @@ function esPedidoAutorizadoCompras(s) {
   return s.estado === 'autorizado' && !tipoCompraEsStock(s.tipoCompra);
 }
 
+function solicitudTieneItemsUrgentes(s) {
+  return productosValidos(s).some((p) => p.urgente);
+}
+
 function renderListaPedidos() {
   const contenedor = document.getElementById('listaPedidos');
   const busqueda = document.getElementById('buscarPedido')?.value.trim().toLowerCase() || '';
@@ -24,9 +28,8 @@ function renderListaPedidos() {
       if (!busqueda) return true;
       return (
         s.numero.includes(busqueda)
-        || s.nombreSolicitante.toLowerCase().includes(busqueda)
-        || (s.numeroOrdenCompra || '').toLowerCase().includes(busqueda)
         || labelSector(s.sector).toLowerCase().includes(busqueda)
+        || labelTipoCompra(s.tipoCompra).toLowerCase().includes(busqueda)
       );
     });
 
@@ -35,29 +38,46 @@ function renderListaPedidos() {
     return;
   }
 
-  contenedor.innerHTML = pedidos.map((s) => `
-    <article class="tarjeta-solicitud estado-autorizado">
-      <div class="tarjeta-header">
-        <span class="tarjeta-numero">Solicitud Nº ${escapeHtml(s.numero)}</span>
-        <span class="badge badge-autorizado">Autorizado</span>
-      </div>
-      <div class="tarjeta-body">
-        <p><strong>Fecha solicitud:</strong> ${formatFecha(s.fecha)}</p>
-        <p><strong>Sector:</strong> ${escapeHtml(labelSector(s.sector))}</p>
-        <p><strong>Tipo de pedido:</strong> ${escapeHtml(labelTipoCompra(s.tipoCompra))}</p>
-        <p><strong>Solicitante:</strong> ${escapeHtml(s.nombreSolicitante)}</p>
-        <p><strong>Ordenador:</strong> ${labelOrdenador(s.ordenador)} — ${escapeHtml(s.nombreOrdenador || '')}</p>
-        <p><strong>Nº Orden de Compra:</strong> ${escapeHtml(s.numeroOrdenCompra) || '<em>Sin asignar</em>'}</p>
-        <p><strong>Productos:</strong> ${productosValidos(s).length} ítem(s)</p>
-      </div>
-      <div class="tarjeta-acciones">
-        <button type="button" class="btn-ver" data-id="${s.id}">Ver pedido</button>
-        <button type="button" class="btn-gestionar" data-id="${s.id}">Gestión pedido</button>
-        <button type="button" class="btn-imprimir-item" data-id="${s.id}">Imprimir</button>
-        <button type="button" class="btn-pdf-item" data-id="${s.id}">PDF</button>
-      </div>
-    </article>
-  `).join('');
+  const hayUrgentes = pedidos.some(solicitudTieneItemsUrgentes);
+
+  contenedor.innerHTML = `
+    ${hayUrgentes ? '<p class="aviso-lista-urgente"><span class="alerta-urgente-icon">!</span> Hay pedidos autorizados con ítems <strong>URGENTES</strong> pendientes de gestión.</p>' : ''}
+    <div class="table-wrapper">
+      <table class="tabla-pedidos-autorizados">
+        <thead>
+          <tr>
+            <th>Nº solicitud</th>
+            <th>Fecha</th>
+            <th>Sector</th>
+            <th>Tipo de pedido</th>
+            <th class="col-acciones-lista">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pedidos.map((s) => {
+            const urgente = solicitudTieneItemsUrgentes(s);
+            return `
+              <tr class="${urgente ? 'pedido-con-urgente' : ''}">
+                <td>
+                  <span class="pedido-numero-celda">${escapeHtml(s.numero)}</span>
+                  ${urgente ? '<span class="alerta-urgente" title="Contiene ítems urgentes"><span class="alerta-urgente-icon">!</span> URGENTE</span>' : ''}
+                </td>
+                <td>${formatFecha(s.fecha)}</td>
+                <td>${escapeHtml(labelSector(s.sector))}</td>
+                <td>${escapeHtml(labelTipoCompra(s.tipoCompra))}</td>
+                <td class="celda-acciones">
+                  <button type="button" class="btn-ver" data-id="${s.id}">Ver pedido</button>
+                  <button type="button" class="btn-gestionar" data-id="${s.id}">Gestión pedido</button>
+                  <button type="button" class="btn-imprimir-item" data-id="${s.id}">Imprimir</button>
+                  <button type="button" class="btn-pdf-item" data-id="${s.id}">PDF</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 
   bindAccionesLista(contenedor);
 }

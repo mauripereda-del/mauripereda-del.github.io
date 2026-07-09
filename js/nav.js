@@ -15,6 +15,7 @@ function renderNav(paginaActiva) {
     { href: 'autorizacion.html?ordenador=consejo_directivo', label: 'Aut. Consejo', key: 'auth-consejo' },
     { href: 'pedidos-autorizados.html', label: 'Pedidos autorizados', key: 'pedidos' },
     { href: 'pedidos-stock.html', label: 'Pedidos Stock', key: 'stock' },
+    { href: 'historico-pedidos.html', label: 'Histórico de pedidos', key: 'historico' },
     { href: 'admin.html', label: 'Administración', key: 'admin' },
   ];
 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico de Pedidos — Solicitud de Pedidos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav-principal"></nav>
+
+  <main class="panel-container panel-container-ancho historico-container">
+    <div class="panel-marca">
+      <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
+    </div>
+
+    <header class="historico-header">
+      <div class="historico-header-titulo">
+        <h1>HISTÓRICO DE PEDIDOS</h1>
+        <p class="panel-subtitulo">Consulta y gestión del historial de pedidos realizados</p>
+      </div>
+      <button type="button" id="btnExportarExcel" class="btn-exportar-excel">
+        <span class="btn-exportar-icono" aria-hidden="true">📊</span> Exportar a Excel
+      </button>
+    </header>
+
+    <section class="historico-filtros">
+      <h2 class="historico-seccion-titulo">FILTROS DE BÚSQUEDA</h2>
+      <form id="formFiltrosHistorico" class="historico-filtros-grid">
+        <div class="field-group">
+          <label for="filtroFechaDesde">Fecha desde</label>
+          <input type="date" id="filtroFechaDesde" name="fechaDesde">
+        </div>
+        <div class="field-group">
+          <label for="filtroFechaHasta">Fecha hasta</label>
+          <input type="date" id="filtroFechaHasta" name="fechaHasta">
+        </div>
+        <div class="field-group">
+          <label for="filtroSector">Sector solicitante</label>
+          <select id="filtroSector" name="sector">
+            <option value="">Todos los sectores</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="filtroTipo">Tipo de pedido</label>
+          <select id="filtroTipo" name="tipo">
+            <option value="">Todos los tipos</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="filtroEstado">Estado</label>
+          <select id="filtroEstado" name="estado">
+            <option value="">Todos los estados</option>
+            <option value="finalizado">Completado</option>
+            <option value="autorizado">Parcial</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="filtroNumero">Número de pedido</label>
+          <input type="text" id="filtroNumero" name="numero" placeholder="Ej: 00001">
+        </div>
+
+        <details class="historico-filtros-avanzados field-full">
+          <summary>Filtros avanzados</summary>
+          <div class="historico-avanzados-grid">
+            <div class="field-group">
+              <label for="filtroSolicitante">Solicitante</label>
+              <input type="text" id="filtroSolicitante" name="solicitante" placeholder="Nombre del solicitante">
+            </div>
+            <div class="field-group">
+              <label for="filtroOrdenador">Ordenador</label>
+              <select id="filtroOrdenador" name="ordenador">
+                <option value="">Todos los ordenadores</option>
+                <option value="gerencia">Gerencia</option>
+                <option value="direccion_tecnica">Dirección Técnica</option>
+                <option value="consejo_directivo">Consejo Directivo</option>
+              </select>
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="filtroSoloUrgente" name="soloUrgente"> Solo con ítems urgentes</label>
+            </div>
+          </div>
+        </details>
+
+        <div class="historico-filtros-acciones field-full">
+          <button type="button" id="btnLimpiarFiltros" class="btn-secundario">
+            <span aria-hidden="true">↺</span> Limpiar filtros
+          </button>
+          <button type="submit" class="btn-buscar-historico">
+            <span aria-hidden="true">🔍</span> Buscar
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section id="resumenHistorico" class="historico-resumen"></section>
+
+    <section class="historico-resultados">
+      <div class="historico-resultados-header">
+        <h2 class="historico-seccion-titulo" id="tituloResultados">RESULTADOS</h2>
+        <div class="historico-paginacion-top" id="paginacionTop"></div>
+      </div>
+      <div id="tablaHistorico" class="historico-tabla-contenedor"></div>
+      <div class="historico-paginacion-bottom" id="paginacionBottom"></div>
+    </section>
+  </main>
+
+  <div id="modalDetalleHistorico" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalleHistorico">&times;</button>
+      <div id="detalleHistoricoContenido"></div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/historico-pedidos.js"></script>
+</body>
+</html>
