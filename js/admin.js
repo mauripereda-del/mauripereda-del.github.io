@@ -1,9 +1,10 @@
 /**
- * Backend administrativo — Sectores y Tipos de Compra
+ * Backend administrativo — Sectores, Tipos de Compra y Compradores
  */
 
 let editandoSectorId = null;
 let editandoTipoId = null;
+let editandoCompradorId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   renderNav('admin');
@@ -23,13 +24,20 @@ function initFormularios() {
     guardarTipoCompra();
   });
 
+  document.getElementById('formComprador').addEventListener('submit', (e) => {
+    e.preventDefault();
+    guardarComprador();
+  });
+
   document.getElementById('btnCancelarSector').addEventListener('click', resetFormSector);
   document.getElementById('btnCancelarTipo').addEventListener('click', resetFormTipo);
+  document.getElementById('btnCancelarComprador').addEventListener('click', resetFormComprador);
 }
 
 function renderTablas() {
   renderTablaSectores();
   renderTablaTipos();
+  renderTablaCompradores();
 }
 
 function renderTablaSectores() {
@@ -37,7 +45,7 @@ function renderTablaSectores() {
   const sectores = getSectores();
 
   if (!sectores.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="sin-datos">Sin sectores registrados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="sin-datos">Sin sectores registrados</td></tr>';
     return;
   }
 
@@ -45,6 +53,7 @@ function renderTablaSectores() {
     <tr>
       <td>${escapeHtml(s.nombre)}</td>
       <td><code>${escapeHtml(s.codigo)}</code></td>
+      <td>${escapeHtml(s.email || '—')}</td>
       <td>${s.orden}</td>
       <td><span class="badge ${s.activo ? 'badge-autorizado' : 'badge-rechazado'}">${s.activo ? 'Activo' : 'Inactivo'}</span></td>
       <td class="celda-acciones">
@@ -94,18 +103,48 @@ function renderTablaTipos() {
   });
 }
 
+function renderTablaCompradores() {
+  const tbody = document.getElementById('tablaCompradoresBody');
+  const compradores = getCompradores();
+
+  if (!compradores.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="sin-datos">Sin compradores registrados</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = compradores.map((c) => `
+    <tr>
+      <td>${escapeHtml(c.nombre)}</td>
+      <td>${c.orden}</td>
+      <td><span class="badge ${c.activo ? 'badge-autorizado' : 'badge-rechazado'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
+      <td class="celda-acciones">
+        <button type="button" class="btn-tabla-editar" data-id="${c.id}">Editar</button>
+        <button type="button" class="btn-tabla-borrar" data-id="${c.id}">Borrar</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.btn-tabla-editar').forEach((btn) => {
+    btn.addEventListener('click', () => editarComprador(btn.dataset.id));
+  });
+  tbody.querySelectorAll('.btn-tabla-borrar').forEach((btn) => {
+    btn.addEventListener('click', () => borrarComprador(btn.dataset.id));
+  });
+}
+
 function guardarSector() {
   const nombre = document.getElementById('sectorNombre').value.trim();
   const codigo = document.getElementById('sectorCodigo').value.trim();
   const activo = document.getElementById('sectorActivo').checked;
   const orden = parseInt(document.getElementById('sectorOrden').value, 10) || 1;
+  const email = document.getElementById('sectorEmail').value.trim();
 
   if (!nombre) {
     alert('Ingrese el nombre del sector.');
     return;
   }
 
-  const data = { nombre, codigo, activo, orden };
+  const data = { nombre, codigo, activo, orden, email };
   const result = editandoSectorId
     ? updateSector(editandoSectorId, data)
     : addSector(data);
@@ -148,6 +187,31 @@ function guardarTipoCompra() {
   renderTablaTipos();
 }
 
+function guardarComprador() {
+  const nombre = document.getElementById('compradorNombre').value.trim();
+  const activo = document.getElementById('compradorActivo').checked;
+  const orden = parseInt(document.getElementById('compradorOrden').value, 10) || 1;
+
+  if (!nombre) {
+    alert('Ingrese el nombre del comprador.');
+    return;
+  }
+
+  const data = { nombre, activo, orden };
+  const result = editandoCompradorId
+    ? updateComprador(editandoCompradorId, data)
+    : addComprador(data);
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  mostrarToast(editandoCompradorId ? 'Comprador actualizado' : 'Comprador agregado');
+  resetFormComprador();
+  renderTablaCompradores();
+}
+
 function editarSector(id) {
   const s = getSectorById(id);
   if (!s) return;
@@ -155,6 +219,7 @@ function editarSector(id) {
   document.getElementById('sectorNombre').value = s.nombre;
   document.getElementById('sectorCodigo').value = s.codigo;
   document.getElementById('sectorOrden').value = s.orden;
+  document.getElementById('sectorEmail').value = s.email || '';
   document.getElementById('sectorActivo').checked = s.activo;
   document.getElementById('tituloFormSector').textContent = 'Editar sector';
   document.getElementById('btnGuardarSector').textContent = 'Actualizar';
@@ -174,6 +239,18 @@ function editarTipoCompra(id) {
   document.getElementById('tituloFormTipo').textContent = 'Editar tipo de pedido';
   document.getElementById('btnGuardarTipo').textContent = 'Actualizar';
   document.getElementById('btnCancelarTipo').hidden = false;
+}
+
+function editarComprador(id) {
+  const c = getCompradorById(id);
+  if (!c) return;
+  editandoCompradorId = id;
+  document.getElementById('compradorNombre').value = c.nombre;
+  document.getElementById('compradorOrden').value = c.orden;
+  document.getElementById('compradorActivo').checked = c.activo;
+  document.getElementById('tituloFormComprador').textContent = 'Editar comprador';
+  document.getElementById('btnGuardarComprador').textContent = 'Actualizar';
+  document.getElementById('btnCancelarComprador').hidden = false;
 }
 
 function borrarSector(id) {
@@ -204,6 +281,20 @@ function borrarTipoCompra(id) {
   renderTablaTipos();
 }
 
+function borrarComprador(id) {
+  const c = getCompradorById(id);
+  if (!c) return;
+  if (!confirm(`¿Eliminar el comprador "${c.nombre}"?`)) return;
+  const result = deleteComprador(id);
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+  mostrarToast('Comprador eliminado');
+  if (editandoCompradorId === id) resetFormComprador();
+  renderTablaCompradores();
+}
+
 function resetFormSector() {
   editandoSectorId = null;
   document.getElementById('formSector').reset();
@@ -222,6 +313,16 @@ function resetFormTipo() {
   document.getElementById('tituloFormTipo').textContent = 'Agregar tipo de pedido';
   document.getElementById('btnGuardarTipo').textContent = 'Agregar';
   document.getElementById('btnCancelarTipo').hidden = true;
+}
+
+function resetFormComprador() {
+  editandoCompradorId = null;
+  document.getElementById('formComprador').reset();
+  document.getElementById('compradorActivo').checked = true;
+  document.getElementById('compradorOrden').value = getCompradores().length + 1;
+  document.getElementById('tituloFormComprador').textContent = 'Agregar comprador';
+  document.getElementById('btnGuardarComprador').textContent = 'Agregar';
+  document.getElementById('btnCancelarComprador').hidden = true;
 }
 
 function initOrdenadoresEmail() {

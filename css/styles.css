@@ -607,6 +607,8 @@ body > * {
 .btn-pdf-item { background: var(--azul-claro); color: #fff; }
 
 .btn-gestionar { background: var(--teal); color: #fff; border: none; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 700; border-radius: 3px; cursor: pointer; }
+.btn-asignar { background: var(--azul); color: #fff; border: none; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 700; border-radius: 3px; cursor: pointer; }
+.btn-asignar-detalle { background: var(--azul); color: #fff; }
 .btn-gestionar-detalle { background: var(--teal); color: #fff; }
 
 /* Selector de ordenadores */
@@ -651,6 +653,32 @@ body > * {
   border: 1px solid #bbb;
   border-radius: 3px;
   font-family: inherit;
+}
+
+.panel-filtros-pedidos {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.panel-filtros-pedidos select {
+  min-width: 180px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.comprador-sin-asignar {
+  color: #999;
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+.comprador-asignado {
+  color: var(--azul);
+  font-weight: 600;
+  font-size: 0.88rem;
 }
 
 .adjunto-oc-controls {
@@ -896,6 +924,31 @@ body > * {
 .detalle-tabla th {
   background: var(--gris-tabla);
   color: var(--azul);
+}
+
+.bloque-edicion-productos {
+  margin-bottom: 1rem;
+}
+
+.bloque-edicion-productos .hint {
+  margin-bottom: 0.75rem;
+}
+
+.tabla-autorizacion-productos .auth-input-cantidad {
+  width: 70px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.tabla-autorizacion-productos .auth-input-descripcion {
+  width: 100%;
+  min-width: 200px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-family: inherit;
 }
 
 .urgente-tag {

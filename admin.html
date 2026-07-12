@@ -16,7 +16,7 @@
 
     <header class="panel-header">
       <h1>ADMINISTRACIÓN</h1>
-      <p class="panel-subtitulo">Gestione los catálogos de Sector Solicitante y Tipo de Pedidos</p>
+      <p class="panel-subtitulo">Gestione los catálogos de Sector Solicitante, Tipo de Pedidos y Compradores</p>
     </header>
 
     <div class="admin-grid">
@@ -40,6 +40,10 @@
               <label for="sectorOrden">Orden</label>
               <input type="number" id="sectorOrden" min="1" value="1">
             </div>
+            <div class="field-group">
+              <label for="sectorEmail">Correo electrónico</label>
+              <input type="email" id="sectorEmail" placeholder="sector@empresa.com">
+            </div>
             <div class="field-group field-check">
               <label><input type="checkbox" id="sectorActivo" checked> Activo</label>
             </div>
@@ -56,6 +60,7 @@
               <tr>
                 <th>Nombre</th>
                 <th>Código</th>
+                <th>Correo</th>
                 <th>Orden</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -115,6 +120,46 @@
               </tr>
             </thead>
             <tbody id="tablaTiposBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Compradores -->
+      <section class="admin-seccion admin-seccion-full">
+        <h2>Compradores</h2>
+
+        <form id="formComprador" class="admin-form">
+          <h3 id="tituloFormComprador">Agregar comprador</h3>
+          <div class="admin-form-grid">
+            <div class="field-group">
+              <label for="compradorNombre">Nombre <span class="required">*</span></label>
+              <input type="text" id="compradorNombre" required placeholder="Ej: JUAN PÉREZ">
+            </div>
+            <div class="field-group">
+              <label for="compradorOrden">Orden</label>
+              <input type="number" id="compradorOrden" min="1" value="1">
+            </div>
+            <div class="field-group field-check">
+              <label><input type="checkbox" id="compradorActivo" checked> Activo</label>
+            </div>
+          </div>
+          <div class="admin-form-acciones">
+            <button type="submit" id="btnGuardarComprador" class="btn-enviar">Agregar</button>
+            <button type="button" id="btnCancelarComprador" class="btn-secundario" hidden>Cancelar</button>
+          </div>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="admin-tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Orden</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCompradoresBody"></tbody>
           </table>
         </div>
       </section>

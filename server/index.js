@@ -107,6 +107,100 @@ app.post('/api/notificar-ordenador', async (req, res) => {
   }
 });
 
+app.post('/api/notificar-sector-autorizacion', async (req, res) => {
+  const datos = req.body || {};
+  const requeridos = ['destinatario', 'numero', 'sector', 'autorizada'];
+  const faltante = requeridos.find((campo) => datos[campo] === undefined || datos[campo] === '');
+  if (faltante && faltante !== 'autorizada') {
+    return res.status(400).json({ error: `Falta el campo: ${faltante}` });
+  }
+  if (datos.autorizada === undefined) {
+    return res.status(400).json({ error: 'Falta el campo: autorizada' });
+  }
+  if (!validarEmail(datos.destinatario)) {
+    return res.status(400).json({ error: 'Correo del destinatario inválido' });
+  }
+
+  const transportador = crearTransportador();
+  if (!transportador) {
+    return res.status(500).json({
+      error: 'Servidor de correo no configurado. Complete SMTP en server/.env',
+    });
+  }
+
+  const estadoTexto = datos.autorizada ? 'AUTORIZADA' : 'RECHAZADA';
+  const editada = datos.editada === true;
+  const asunto = `Solicitud Nº ${datos.numero} — ${estadoTexto}${editada ? ' (con modificaciones)' : ''}`;
+
+  const cambiosHtml = (datos.cambiosProductos || []).map((c) => `
+    <li>
+      <strong>${c.descripcionAnterior || c.codigo || 'Ítem'}</strong>:
+      cantidad ${c.cantidadAnterior} → ${c.cantidadNueva},
+      descripción "${c.descripcionAnterior}" → "${c.descripcionNueva}"
+    </li>
+  `).join('');
+
+  const productosHtml = (datos.productos || []).map((p) => `
+    <tr>
+      <td style="border:1px solid #ddd;padding:6px;">${p.codigo || '—'}</td>
+      <td style="border:1px solid #ddd;padding:6px;">${p.cantidad}</td>
+      <td style="border:1px solid #ddd;padding:6px;">${p.descripcion}</td>
+    </tr>
+  `).join('');
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#222;max-width:640px;">
+      <h2 style="color:#1a4d2e;">Solicitud ${estadoTexto.toLowerCase()}</h2>
+      <p>Estimado/a sector <strong>${datos.sector}</strong>,</p>
+      <p>La solicitud Nº <strong>${datos.numero}</strong> fue <strong>${estadoTexto}</strong> por ${datos.nombreOrdenador || datos.ordenador || 'el ordenador'}.</p>
+      <table style="border-collapse:collapse;width:100%;margin:12px 0;">
+        <tr><td style="padding:4px 0;"><strong>Fecha:</strong></td><td>${datos.fecha || '—'}</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Solicitante:</strong></td><td>${datos.solicitante || '—'}</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Tipo:</strong></td><td>${datos.tipoPedido || '—'}</td></tr>
+      </table>
+      ${datos.observacion ? `<p><strong>Observación del ordenador:</strong> ${datos.observacion}</p>` : ''}
+      ${editada ? `<p style="color:#c0392b;"><strong>La solicitud fue modificada por el ordenador antes de autorizar.</strong></p>${cambiosHtml ? `<ul>${cambiosHtml}</ul>` : ''}` : ''}
+      ${datos.autorizada && productosHtml ? `
+        <h3 style="font-size:14px;margin-top:16px;">Productos ${editada ? 'actualizados' : 'autorizados'}</h3>
+        <table style="border-collapse:collapse;width:100%;font-size:13px;">
+          <thead>
+            <tr style="background:#eee;">
+              <th style="border:1px solid #ddd;padding:6px;">CÓD.</th>
+              <th style="border:1px solid #ddd;padding:6px;">CANT.</th>
+              <th style="border:1px solid #ddd;padding:6px;">DESCRIPCIÓN</th>
+            </tr>
+          </thead>
+          <tbody>${productosHtml}</tbody>
+        </table>
+      ` : ''}
+      <p style="font-size:12px;color:#666;margin-top:24px;">Mensaje automático — Solicitud de Compras CASMER / FEPREMI</p>
+    </div>
+  `;
+
+  const textoPlano = [
+    `Solicitud ${estadoTexto}`,
+    `Nº: ${datos.numero}`,
+    `Sector: ${datos.sector}`,
+    `Ordenador: ${datos.nombreOrdenador || datos.ordenador || '—'}`,
+    editada ? 'Incluye modificaciones del ordenador.' : 'Sin modificaciones.',
+    datos.observacion ? `Observación: ${datos.observacion}` : '',
+  ].filter(Boolean).join('\n');
+
+  try {
+    await transportador.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: datos.destinatario,
+      subject: asunto,
+      text: textoPlano,
+      html,
+    });
+    return res.json({ ok: true, mensaje: 'Notificación enviada al sector correctamente' });
+  } catch (err) {
+    console.error('Error al enviar correo al sector:', err.message);
+    return res.status(500).json({ error: 'No se pudo enviar el correo. Revise la configuración SMTP.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servicio de correo (API) → http://127.0.0.1:${PORT}`);
   console.log(`  Health check: http://127.0.0.1:${PORT}/api/health`);

@@ -1,5 +1,5 @@
 /**
- * Notificaciones por correo electrónico al ordenador
+ * Notificaciones por correo electrónico
  */
 
 async function notificarOrdenadorPendiente(solicitud) {
@@ -29,7 +29,49 @@ async function notificarOrdenadorPendiente(solicitud) {
     panelUrl: getUrlAbsolutaPanelAutorizacion(ordenador),
   };
 
-  const apiUrl = getApiNotificacionesUrl();
+  return enviarNotificacionApi(getApiNotificacionesUrl(), payload);
+}
+
+function getApiNotificarSectorUrl() {
+  return getApiNotificacionesUrl().replace(
+    '/api/notificar-ordenador',
+    '/api/notificar-sector-autorizacion',
+  );
+}
+
+async function notificarSectorAutorizacion(solicitud, opciones) {
+  const destinatario = getEmailSector(solicitud.sector);
+  if (!destinatario) {
+    return {
+      ok: false,
+      error: `Configure el correo del sector ${labelSector(solicitud.sector)} en Administración`,
+    };
+  }
+
+  const payload = {
+    destinatario,
+    numero: solicitud.numero,
+    fecha: formatFecha(solicitud.fecha),
+    sector: labelSector(solicitud.sector),
+    tipoPedido: labelTipoCompra(solicitud.tipoCompra),
+    solicitante: solicitud.nombreSolicitante,
+    ordenador: labelOrdenador(solicitud.ordenador),
+    nombreOrdenador: opciones.nombreOrdenador,
+    autorizada: opciones.autorizada,
+    editada: opciones.editada,
+    observacion: opciones.observacion || '',
+    cambiosProductos: opciones.cambiosProductos || [],
+    productos: productosValidos(solicitud).map((p) => ({
+      codigo: p.codigo || '',
+      cantidad: p.cantidad,
+      descripcion: p.descripcion,
+    })),
+  };
+
+  return enviarNotificacionApi(getApiNotificarSectorUrl(), payload);
+}
+
+async function enviarNotificacionApi(apiUrl, payload) {
   try {
     const respuesta = await fetch(apiUrl, {
       method: 'POST',
@@ -41,7 +83,7 @@ async function notificarOrdenadorPendiente(solicitud) {
     if (!respuesta.ok) {
       return { ok: false, error: datos.error || `Error del servidor (${respuesta.status})` };
     }
-    return { ok: true, mensaje: datos.mensaje || 'Correo enviado al ordenador' };
+    return { ok: true, mensaje: datos.mensaje || 'Notificación enviada correctamente' };
   } catch {
     return {
       ok: false,

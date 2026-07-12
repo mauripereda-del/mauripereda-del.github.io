@@ -9,7 +9,7 @@
 <body>
   <nav class="nav-principal"></nav>
 
-  <main class="panel-container">
+  <main class="panel-container panel-container-ancho">
     <div class="panel-marca">
       <img src="assets/logo-casmer.png" alt="CASMER - FEPREMI" class="logo-casmer">
     </div>
@@ -17,9 +17,14 @@
       <h1>PEDIDOS AUTORIZADOS</h1>
       <p class="panel-subtitulo">Sector Compras — Gestione pedidos autorizados por el ordenador</p>
 
-      <div class="panel-filtros">
+      <div class="panel-filtros panel-filtros-pedidos">
         <label for="buscarPedido">Buscar:</label>
         <input type="search" id="buscarPedido" placeholder="Nº solicitud, sector, tipo de pedido...">
+        <label for="filtroComprador">Comprador:</label>
+        <select id="filtroComprador">
+          <option value="">Todos</option>
+          <option value="__sin_asignar__">Sin asignar</option>
+        </select>
       </div>
     </header>
 
@@ -30,6 +35,26 @@
     <div class="modal-contenido modal-grande">
       <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalle">&times;</button>
       <div id="detalleContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalAsignar" class="modal-overlay">
+    <div class="modal-contenido">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalAsignar">&times;</button>
+      <h2 id="asignarTitulo">Asignar comprador</h2>
+
+      <div class="field-group">
+        <label for="selectCompradorAsignado">Comprador asignado <span class="required">*</span></label>
+        <select id="selectCompradorAsignado">
+          <option value="">— Seleccione un comprador —</option>
+        </select>
+      </div>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnConfirmarAsignacion" class="btn-enviar">Asignar</button>
+        <button type="button" id="btnQuitarAsignacion" class="btn-secundario">Quitar asignación</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalAsignar">Cancelar</button>
+      </div>
     </div>
   </div>
 

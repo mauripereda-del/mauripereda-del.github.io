@@ -160,7 +160,6 @@ function abrirDetalle(id) {
     ${s.observacionOrdenador ? `<p><strong>Observación:</strong> ${escapeHtml(s.observacionOrdenador)}</p>` : ''}
     <div class="detalle-acciones">
       <button type="button" class="btn-imprimir-detalle">Imprimir</button>
-      <button type="button" class="btn-pdf-detalle">Exportar PDF</button>
       ${s.estado === 'pendiente' ? `
         <button type="button" class="btn-autorizar-si-detalle">Autorizar (SI)</button>
         <button type="button" class="btn-autorizar-no-detalle">Rechazar (NO)</button>
@@ -170,7 +169,6 @@ function abrirDetalle(id) {
 
   const contenido = document.getElementById('detalleContenido');
   contenido.querySelector('.btn-imprimir-detalle')?.addEventListener('click', () => imprimirSolicitud(s));
-  contenido.querySelector('.btn-pdf-detalle')?.addEventListener('click', () => exportarSolicitudPdf(s));
   contenido.querySelector('.btn-autorizar-si-detalle')?.addEventListener('click', () => {
     cerrarModal('modalDetalle');
     abrirModalAutorizacion(s.id, true);
@@ -201,19 +199,92 @@ function initModalAutorizacion() {
 }
 
 function abrirModalAutorizacion(id, autorizar) {
-  solicitudActual = { id, autorizar };
+  solicitudActual = { id, autorizar, productosOriginales: null };
   const s = getSolicitudById(id);
   if (!s) return;
 
+  solicitudActual.productosOriginales = JSON.parse(JSON.stringify(s.productos || []));
+
   document.getElementById('modalAutorizacionTitulo').textContent =
     autorizar ? `Autorizar solicitud Nº ${s.numero}` : `Rechazar solicitud Nº ${s.numero}`;
+
+  const bloqueProductos = document.getElementById('bloqueEdicionProductos');
+  const tbody = document.getElementById('productosAutorizacionBody');
+
+  if (autorizar) {
+    bloqueProductos.hidden = false;
+    tbody.innerHTML = (s.productos || [])
+      .map((p, idx) => {
+        if (!p.descripcion) return '';
+        return `
+          <tr data-idx="${idx}">
+            <td>${escapeHtml(p.codigo) || '—'}</td>
+            <td><input type="number" class="auth-input-cantidad" min="1" value="${p.cantidad}" required></td>
+            <td><input type="text" class="auth-input-descripcion" value="${escapeHtml(p.descripcion)}" required></td>
+          </tr>
+        `;
+      })
+      .join('');
+  } else {
+    bloqueProductos.hidden = true;
+    tbody.innerHTML = '';
+  }
 
   document.getElementById('nombreOrdenador').value = '';
   document.getElementById('observacionOrdenador').value = '';
   document.getElementById('modalAutorizacion').classList.add('activo');
 }
 
-function confirmarAutorizacion() {
+function obtenerProductosEditadosAutorizacion(productosOriginales) {
+  const productos = JSON.parse(JSON.stringify(productosOriginales || []));
+  document.querySelectorAll('#productosAutorizacionBody tr[data-idx]').forEach((tr) => {
+    const idx = parseInt(tr.dataset.idx, 10);
+    productos[idx] = {
+      ...productos[idx],
+      cantidad: parseInt(tr.querySelector('.auth-input-cantidad').value, 10) || 1,
+      descripcion: tr.querySelector('.auth-input-descripcion').value.trim(),
+    };
+  });
+  return productos;
+}
+
+function detectarCambiosProductos(productosOriginales, productosActualizados) {
+  const cambios = [];
+  (productosOriginales || []).forEach((p, idx) => {
+    if (!p.descripcion) return;
+    const n = productosActualizados[idx];
+    if (!n) return;
+    if (p.cantidad !== n.cantidad || p.descripcion !== n.descripcion) {
+      cambios.push({
+        codigo: p.codigo || '',
+        cantidadAnterior: p.cantidad,
+        cantidadNueva: n.cantidad,
+        descripcionAnterior: p.descripcion,
+        descripcionNueva: n.descripcion,
+      });
+    }
+  });
+  return cambios;
+}
+
+function validarProductosAutorizacion() {
+  const filas = document.querySelectorAll('#productosAutorizacionBody tr[data-idx]');
+  for (const tr of filas) {
+    const cantidad = parseInt(tr.querySelector('.auth-input-cantidad').value, 10);
+    const descripcion = tr.querySelector('.auth-input-descripcion').value.trim();
+    if (!descripcion) {
+      alert('Todos los productos deben tener descripción.');
+      return false;
+    }
+    if (!cantidad || cantidad < 1) {
+      alert('La cantidad debe ser al menos 1.');
+      return false;
+    }
+  }
+  return true;
+}
+
+async function confirmarAutorizacion() {
   if (!solicitudActual) return;
 
   const nombreOrdenador = document.getElementById('nombreOrdenador').value.trim();
@@ -222,22 +293,71 @@ function confirmarAutorizacion() {
     return;
   }
 
-  const { id, autorizar } = solicitudActual;
+  const { id, autorizar, productosOriginales } = solicitudActual;
+  const observacionOrdenador = document.getElementById('observacionOrdenador').value.trim();
+  const btnConfirmar = document.getElementById('btnConfirmarAutorizacion');
 
-  updateSolicitud(id, {
+  let productosActualizados = productosOriginales;
+  let cambiosProductos = [];
+
+  if (autorizar) {
+    if (!validarProductosAutorizacion()) return;
+    productosActualizados = obtenerProductosEditadosAutorizacion(productosOriginales);
+    cambiosProductos = detectarCambiosProductos(productosOriginales, productosActualizados);
+  }
+
+  btnConfirmar.disabled = true;
+  btnConfirmar.textContent = 'CONFIRMANDO...';
+
+  const cambiosSolicitud = {
     estado: autorizar ? 'autorizado' : 'rechazado',
     autorizado: autorizar,
     nombreOrdenador,
-    observacionOrdenador: document.getElementById('observacionOrdenador').value.trim(),
+    observacionOrdenador,
     fechaAutorizacion: new Date().toLocaleString('es-AR'),
+  };
+
+  if (autorizar) {
+    cambiosSolicitud.productos = productosActualizados;
+    cambiosSolicitud.editadaPorOrdenador = cambiosProductos.length > 0;
+  }
+
+  updateSolicitud(id, cambiosSolicitud);
+  const solicitudActualizada = getSolicitudById(id);
+
+  const notificacion = await notificarSectorAutorizacion(solicitudActualizada, {
+    autorizada: autorizar,
+    editada: cambiosProductos.length > 0,
+    cambiosProductos,
+    observacion: observacionOrdenador,
+    nombreOrdenador,
   });
 
   cerrarModal('modalAutorizacion');
   solicitudActual = null;
   renderListaSolicitudes();
-  mostrarToast(autorizar ? 'Solicitud autorizada' : 'Solicitud rechazada');
+
+  btnConfirmar.disabled = false;
+  btnConfirmar.textContent = 'Confirmar';
+
+  if (autorizar) {
+    const msg = cambiosProductos.length > 0
+      ? 'Solicitud autorizada con modificaciones'
+      : 'Solicitud autorizada';
+    mostrarToast(notificacion.ok ? `${msg}. ${notificacion.mensaje}` : `${msg}. ${notificacion.error}`);
+  } else {
+    mostrarToast(notificacion.ok ? `Solicitud rechazada. ${notificacion.mensaje}` : `Solicitud rechazada. ${notificacion.error}`);
+  }
 }
 
 function cerrarModal(id) {
   document.getElementById(id).classList.remove('activo');
+  if (id === 'modalAutorizacion') {
+    solicitudActual = null;
+    const btn = document.getElementById('btnConfirmarAutorizacion');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar';
+    }
+  }
 }

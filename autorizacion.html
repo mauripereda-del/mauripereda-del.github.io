@@ -33,9 +33,25 @@
   </div>
 
   <div id="modalAutorizacion" class="modal-overlay">
-    <div class="modal-contenido">
+    <div class="modal-contenido modal-grande">
       <button type="button" class="modal-cerrar" data-cerrar-modal="modalAutorizacion">&times;</button>
       <h2 id="modalAutorizacionTitulo">Autorizar solicitud</h2>
+
+      <div id="bloqueEdicionProductos" class="bloque-edicion-productos" hidden>
+        <p class="hint">Puede modificar <strong>cantidad</strong> y <strong>descripción</strong> antes de confirmar. Los cambios se aplicarán en todo el sistema.</p>
+        <div class="table-wrapper">
+          <table class="detalle-tabla tabla-autorizacion-productos" id="tablaProductosAutorizacion">
+            <thead>
+              <tr>
+                <th>CÓD.</th>
+                <th>CANT.</th>
+                <th>DESCRIPCIÓN PRODUCTO</th>
+              </tr>
+            </thead>
+            <tbody id="productosAutorizacionBody"></tbody>
+          </table>
+        </div>
+      </div>
 
       <div class="field-group">
         <label for="nombreOrdenador">Nombre del ordenador <span class="required">*</span></label>

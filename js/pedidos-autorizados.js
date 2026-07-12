@@ -3,9 +3,11 @@
  */
 
 let pedidoActual = null;
+let pedidoAsignar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   renderNav('pedidos');
+  poblarFiltroCompradores();
   renderListaPedidos();
   initModales();
 });
@@ -18,18 +20,51 @@ function solicitudTieneItemsUrgentes(s) {
   return productosValidos(s).some((p) => p.urgente);
 }
 
+function textoCompradorAsignado(s) {
+  const nombre = labelComprador(s.compradorId);
+  return nombre
+    ? `<span class="comprador-asignado">${escapeHtml(nombre)}</span>`
+    : '<span class="comprador-sin-asignar">Sin asignar</span>';
+}
+
+function poblarFiltroCompradores() {
+  const select = document.getElementById('filtroComprador');
+  if (!select) return;
+
+  const valorActual = select.value;
+  const compradores = getCompradores(true);
+
+  select.innerHTML = `
+    <option value="">Todos</option>
+    <option value="__sin_asignar__">Sin asignar</option>
+    ${compradores.map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('')}
+  `;
+
+  if (valorActual && [...select.options].some((o) => o.value === valorActual)) {
+    select.value = valorActual;
+  }
+}
+
 function renderListaPedidos() {
   const contenedor = document.getElementById('listaPedidos');
   const busqueda = document.getElementById('buscarPedido')?.value.trim().toLowerCase() || '';
+  const filtroComprador = document.getElementById('filtroComprador')?.value || '';
 
   const pedidos = getSolicitudes()
     .filter(esPedidoAutorizadoCompras)
     .filter((s) => {
+      if (filtroComprador === '__sin_asignar__') return !s.compradorId;
+      if (filtroComprador) return s.compradorId === filtroComprador;
+      return true;
+    })
+    .filter((s) => {
       if (!busqueda) return true;
+      const comprador = (labelComprador(s.compradorId) || '').toLowerCase();
       return (
         s.numero.includes(busqueda)
         || labelSector(s.sector).toLowerCase().includes(busqueda)
         || labelTipoCompra(s.tipoCompra).toLowerCase().includes(busqueda)
+        || comprador.includes(busqueda)
       );
     });
 
@@ -50,6 +85,7 @@ function renderListaPedidos() {
             <th>Fecha</th>
             <th>Sector</th>
             <th>Tipo de pedido</th>
+            <th>Comprador</th>
             <th class="col-acciones-lista">Acciones</th>
           </tr>
         </thead>
@@ -65,11 +101,12 @@ function renderListaPedidos() {
                 <td>${formatFecha(s.fecha)}</td>
                 <td>${escapeHtml(labelSector(s.sector))}</td>
                 <td>${escapeHtml(labelTipoCompra(s.tipoCompra))}</td>
+                <td>${textoCompradorAsignado(s)}</td>
                 <td class="celda-acciones">
                   <button type="button" class="btn-ver" data-id="${s.id}">Ver pedido</button>
+                  <button type="button" class="btn-asignar" data-id="${s.id}">Asignar</button>
                   <button type="button" class="btn-gestionar" data-id="${s.id}">Gestión pedido</button>
                   <button type="button" class="btn-imprimir-item" data-id="${s.id}">Imprimir</button>
-                  <button type="button" class="btn-pdf-item" data-id="${s.id}">PDF</button>
                 </td>
               </tr>
             `;
@@ -86,6 +123,9 @@ function bindAccionesLista(contenedor) {
   contenedor.querySelectorAll('.btn-ver').forEach((btn) => {
     btn.addEventListener('click', () => abrirDetallePedido(btn.dataset.id));
   });
+  contenedor.querySelectorAll('.btn-asignar').forEach((btn) => {
+    btn.addEventListener('click', () => abrirModalAsignar(btn.dataset.id));
+  });
   contenedor.querySelectorAll('.btn-gestionar').forEach((btn) => {
     btn.addEventListener('click', () => abrirModalGestion(btn.dataset.id));
   });
@@ -95,12 +135,62 @@ function bindAccionesLista(contenedor) {
       if (s) imprimirSolicitud(s);
     });
   });
-  contenedor.querySelectorAll('.btn-pdf-item').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const s = getSolicitudById(btn.dataset.id);
-      if (s) await exportarSolicitudPdf(s);
-    });
+}
+
+function abrirModalAsignar(id) {
+  pedidoAsignar = id;
+  const s = getSolicitudById(id);
+  if (!s) return;
+
+  document.getElementById('asignarTitulo').textContent = `Asignar comprador — Solicitud Nº ${s.numero}`;
+
+  const select = document.getElementById('selectCompradorAsignado');
+  const compradores = getCompradores(true);
+  select.innerHTML = `
+    <option value="">— Seleccione un comprador —</option>
+    ${compradores.map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('')}
+  `;
+  if (s.compradorId && compradores.some((c) => c.id === s.compradorId)) {
+    select.value = s.compradorId;
+  }
+
+  document.getElementById('modalAsignar').classList.add('activo');
+}
+
+function confirmarAsignacion() {
+  if (!pedidoAsignar) return;
+
+  const compradorId = document.getElementById('selectCompradorAsignado').value;
+  if (!compradorId) {
+    alert('Seleccione un comprador.');
+    return;
+  }
+
+  updateSolicitud(pedidoAsignar, {
+    compradorId,
+    fechaAsignacionComprador: new Date().toLocaleString('es-AR'),
   });
+
+  const nombre = labelComprador(compradorId);
+  pedidoAsignar = null;
+  cerrarModal('modalAsignar');
+  renderListaPedidos();
+  mostrarToast(`Pedido asignado a ${nombre}`);
+}
+
+function quitarAsignacion() {
+  if (!pedidoAsignar) return;
+  if (!confirm('¿Quitar la asignación de comprador de este pedido?')) return;
+
+  updateSolicitud(pedidoAsignar, {
+    compradorId: null,
+    fechaAsignacionComprador: null,
+  });
+
+  pedidoAsignar = null;
+  cerrarModal('modalAsignar');
+  renderListaPedidos();
+  mostrarToast('Asignación eliminada');
 }
 
 function abrirDetallePedido(id) {
@@ -119,11 +209,14 @@ function abrirDetallePedido(id) {
     </tr>
   `).join('');
 
+  const compradorTexto = labelComprador(s.compradorId) || 'Sin asignar';
+
   document.getElementById('detalleContenido').innerHTML = `
     <h2>Pedido autorizado Nº ${escapeHtml(s.numero)}</h2>
     <div class="detalle-grid">
       <p><strong>Fecha:</strong> ${formatFecha(s.fecha)}</p>
       <p><strong>Sector:</strong> ${escapeHtml(labelSector(s.sector))}</p>
+      <p><strong>Comprador:</strong> ${escapeHtml(compradorTexto)}</p>
       <p><strong>Solicitante:</strong> ${escapeHtml(s.nombreSolicitante)}</p>
       <p><strong>Jefe sector:</strong> ${escapeHtml(s.jefeSector)}</p>
       <p><strong>Autorizó:</strong> ${escapeHtml(s.nombreOrdenador)} (${escapeHtml(s.fechaAutorizacion)})</p>
@@ -138,6 +231,7 @@ function abrirDetallePedido(id) {
     ${s.adjuntoOrdenCompra ? `<p><strong>PDF Orden / Cotización:</strong> <a href="${s.adjuntoOrdenCompra.dataUrl}" target="_blank">${escapeHtml(s.adjuntoOrdenCompra.nombre)}</a></p>` : ''}
     <div class="detalle-acciones">
       <button type="button" class="btn-gestionar-detalle">Gestión pedido</button>
+      <button type="button" class="btn-asignar-detalle">Asignar</button>
       <button type="button" class="btn-imprimir-detalle">Imprimir</button>
       <button type="button" class="btn-pdf-detalle">PDF</button>
     </div>
@@ -147,6 +241,10 @@ function abrirDetallePedido(id) {
   contenido.querySelector('.btn-gestionar-detalle')?.addEventListener('click', () => {
     cerrarModal('modalDetalle');
     abrirModalGestion(s.id);
+  });
+  contenido.querySelector('.btn-asignar-detalle')?.addEventListener('click', () => {
+    cerrarModal('modalDetalle');
+    abrirModalAsignar(s.id);
   });
   contenido.querySelector('.btn-imprimir-detalle')?.addEventListener('click', () => imprimirSolicitud(s));
   contenido.querySelector('.btn-pdf-detalle')?.addEventListener('click', () => exportarSolicitudPdf(s));
@@ -222,7 +320,10 @@ async function cerrarPedidoCompras() {
 
 function initModales() {
   document.getElementById('buscarPedido').addEventListener('input', renderListaPedidos);
+  document.getElementById('filtroComprador').addEventListener('change', renderListaPedidos);
   document.getElementById('btnCerrarPedido').addEventListener('click', cerrarPedidoCompras);
+  document.getElementById('btnConfirmarAsignacion').addEventListener('click', confirmarAsignacion);
+  document.getElementById('btnQuitarAsignacion').addEventListener('click', quitarAsignacion);
   document.getElementById('btnAdjuntarOC').addEventListener('click', () => {
     document.getElementById('inputAdjuntoOC').click();
   });
@@ -240,4 +341,5 @@ function initModales() {
 
 function cerrarModal(id) {
   document.getElementById(id).classList.remove('activo');
+  if (id === 'modalAsignar') pedidoAsignar = null;
 }

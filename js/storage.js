@@ -159,6 +159,9 @@ function escapeHtml(texto) {
 
 const SECTORES_KEY = 'catalogo_sectores';
 const TIPOS_COMPRA_KEY = 'catalogo_tipos_compra';
+const COMPRADORES_KEY = 'catalogo_compradores';
+const COMPRADORES_CATALOGO_VERSION_KEY = 'catalogo_compradores_version';
+const COMPRADORES_CATALOGO_VERSION = 1;
 const TIPOS_CATALOGO_VERSION_KEY = 'catalogo_tipos_version';
 const TIPOS_CATALOGO_VERSION = 3;
 
@@ -255,12 +258,24 @@ const SECTORES_DEFAULT = [
   { id: 'sec-log', nombre: 'LOGÍSTICA', codigo: 'LOGISTICA', activo: true, orden: 5 },
 ];
 
+const COMPRADORES_DEFAULT = [
+  { id: 'comp-alicia-suarez', nombre: 'ALICIA SUAREZ', activo: true, orden: 1 },
+  { id: 'comp-luis-uriarte', nombre: 'LUIS E.URIARTE', activo: true, orden: 2 },
+  { id: 'comp-mauricio-pereda', nombre: 'MAURICIO PEREDA', activo: true, orden: 3 },
+  { id: 'comp-alejandro-cuevas', nombre: 'ALEJANDRO CUEVAS', activo: true, orden: 4 },
+  { id: 'comp-marcos-trinidad', nombre: 'MARCOS TRINIDAD', activo: true, orden: 5 },
+  { id: 'comp-bryan-macedo', nombre: 'BRYAN MACEDO', activo: true, orden: 6 },
+];
+
 function initCatalogos() {
   if (!localStorage.getItem(SECTORES_KEY)) {
     localStorage.setItem(SECTORES_KEY, JSON.stringify(SECTORES_DEFAULT));
   }
   if (!localStorage.getItem(TIPOS_COMPRA_KEY)) {
     localStorage.setItem(TIPOS_COMPRA_KEY, JSON.stringify(TIPOS_COMPRA_DEFAULT));
+  }
+  if (!localStorage.getItem(COMPRADORES_KEY)) {
+    localStorage.setItem(COMPRADORES_KEY, JSON.stringify(COMPRADORES_DEFAULT));
   }
 }
 
@@ -302,6 +317,10 @@ function getSectorByCodigo(codigo) {
   return getSectores().find((s) => s.codigo === codigo) || null;
 }
 
+function getEmailSector(codigo) {
+  return (getSectorByCodigo(codigo)?.email || '').trim();
+}
+
 function getTipoCompraByCodigo(codigo) {
   return getTiposCompra().find((t) => t.codigo === codigo) || null;
 }
@@ -328,7 +347,7 @@ function tipoCompraEnUso(codigo) {
   return getSolicitudes().some((s) => s.tipoCompra === codigo);
 }
 
-function addSector({ nombre, codigo, activo = true, orden }) {
+function addSector({ nombre, codigo, activo = true, orden, email = '' }) {
   const lista = getSectores();
   const cod = codigo?.trim() || generarCodigoCatalogo(nombre);
   if (codigoCatalogoDuplicado(lista, cod)) return { error: 'Ya existe un sector con ese código.' };
@@ -338,6 +357,7 @@ function addSector({ nombre, codigo, activo = true, orden }) {
     codigo: cod,
     activo: !!activo,
     orden: orden || lista.length + 1,
+    email: (email || '').trim(),
   };
   lista.push(item);
   saveCatalogo(SECTORES_KEY, lista);
@@ -364,6 +384,7 @@ function updateSector(id, cambios) {
     codigo: nuevoCodigo,
     activo: cambios.activo !== undefined ? !!cambios.activo : actual.activo,
     orden: cambios.orden !== undefined ? cambios.orden : actual.orden,
+    email: cambios.email !== undefined ? cambios.email.trim() : (actual.email || ''),
   };
   saveCatalogo(SECTORES_KEY, lista);
   return { item: lista[idx] };
@@ -442,6 +463,100 @@ function deleteTipoCompra(id) {
   return { ok: true };
 }
 
+function sincronizarCatalogoCompradores() {
+  initCatalogos();
+  const version = parseInt(localStorage.getItem(COMPRADORES_CATALOGO_VERSION_KEY) || '0', 10);
+
+  if (version < COMPRADORES_CATALOGO_VERSION) {
+    let lista = version === 0
+      ? COMPRADORES_DEFAULT.map((c) => ({ ...c }))
+      : getCatalogo(COMPRADORES_KEY, COMPRADORES_DEFAULT);
+
+    COMPRADORES_DEFAULT.forEach((defecto) => {
+      if (!lista.some((c) => c.id === defecto.id)) {
+        lista.push({ ...defecto });
+      }
+    });
+
+    saveCatalogo(COMPRADORES_KEY, lista);
+    localStorage.setItem(COMPRADORES_CATALOGO_VERSION_KEY, String(COMPRADORES_CATALOGO_VERSION));
+  }
+}
+
+function getCompradores(activosOnly = false) {
+  const lista = getCatalogo(COMPRADORES_KEY, COMPRADORES_DEFAULT)
+    .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
+  return activosOnly ? lista.filter((c) => c.activo) : lista;
+}
+
+function getCompradorById(id) {
+  return getCompradores().find((c) => c.id === id) || null;
+}
+
+function compradorEnUso(id) {
+  return getSolicitudes().some((s) => s.compradorId === id);
+}
+
+function nombreCompradorDuplicado(lista, nombre, idExcluir = null) {
+  const norm = nombre.trim().toUpperCase();
+  return lista.some((c) => c.nombre.trim().toUpperCase() === norm && c.id !== idExcluir);
+}
+
+function addComprador({ nombre, activo = true, orden }) {
+  const lista = getCompradores();
+  const nom = nombre.trim();
+  if (!nom) return { error: 'Ingrese el nombre del comprador.' };
+  if (nombreCompradorDuplicado(lista, nom)) return { error: 'Ya existe un comprador con ese nombre.' };
+  const item = {
+    id: `comp-${Date.now()}`,
+    nombre: nom.toUpperCase(),
+    activo: !!activo,
+    orden: orden || lista.length + 1,
+  };
+  lista.push(item);
+  saveCatalogo(COMPRADORES_KEY, lista);
+  return { item };
+}
+
+function updateComprador(id, cambios) {
+  const lista = getCompradores();
+  const idx = lista.findIndex((c) => c.id === id);
+  if (idx === -1) return { error: 'Comprador no encontrado.' };
+
+  const actual = lista[idx];
+  const nom = (cambios.nombre?.trim() || actual.nombre).toUpperCase();
+  if (nombreCompradorDuplicado(lista, nom, id)) {
+    return { error: 'Ya existe un comprador con ese nombre.' };
+  }
+
+  lista[idx] = {
+    ...actual,
+    nombre: nom,
+    activo: cambios.activo !== undefined ? !!cambios.activo : actual.activo,
+    orden: cambios.orden !== undefined ? cambios.orden : actual.orden,
+  };
+  saveCatalogo(COMPRADORES_KEY, lista);
+  return { item: lista[idx] };
+}
+
+function deleteComprador(id) {
+  const lista = getCompradores();
+  const comprador = lista.find((c) => c.id === id);
+  if (!comprador) return { error: 'Comprador no encontrado.' };
+  if (compradorEnUso(id)) {
+    return { error: 'No se puede eliminar: hay pedidos asignados a este comprador.' };
+  }
+  if (lista.filter((c) => c.activo).length <= 1 && comprador.activo) {
+    return { error: 'Debe quedar al menos un comprador activo.' };
+  }
+  saveCatalogo(COMPRADORES_KEY, lista.filter((c) => c.id !== id));
+  return { ok: true };
+}
+
+function labelComprador(compradorId) {
+  return getCompradorById(compradorId)?.nombre || null;
+}
+
 function getOrdenadorFijoPorTipo(codigo) {
   if (codigo === 'COMPRA_RESOL_CD') return 'consejo_directivo';
   const tipo = getTipoCompraByCodigo(codigo);
@@ -509,3 +624,4 @@ function requiereJustificacionUrgente(datos) {
 initCatalogos();
 initOrdenadoresConfig();
 sincronizarCatalogoTipos();
+sincronizarCatalogoCompradores();
