@@ -260,7 +260,7 @@ function mostrarToast(mensaje) {
   setTimeout(() => toast.remove(), 3500);
 }
 
-function mostrarNotificacionPedidoFinalizado(numeroOC) {
+function mostrarNotificacionPedidoFinalizado(numeroOC, opciones = {}) {
   const existente = document.getElementById('modalNotificacion');
   if (existente) existente.remove();
 
@@ -280,8 +280,16 @@ function mostrarNotificacionPedidoFinalizado(numeroOC) {
     </div>
   `;
   document.body.appendChild(modal);
-  modal.querySelector('#btnCerrarNotificacion').addEventListener('click', () => modal.remove());
+
+  const cerrarModal = async () => {
+    if (typeof opciones.onEntendido === 'function') {
+      await opciones.onEntendido();
+    }
+    modal.remove();
+  };
+
+  modal.querySelector('#btnCerrarNotificacion').addEventListener('click', cerrarModal);
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
+    if (e.target === modal) cerrarModal();
   });
 }

@@ -14,6 +14,10 @@ function esPedidoStockActivo(s) {
   return tipoCompraEsStock(s.tipoCompra) && s.estado === 'autorizado';
 }
 
+function stockTieneItemsUrgentes(s) {
+  return productosValidos(s).some((p) => p.urgente);
+}
+
 function renderListaStock() {
   const contenedor = document.getElementById('listaStock');
   const busqueda = document.getElementById('buscarStock')?.value.trim().toLowerCase() || '';
@@ -27,33 +31,44 @@ function renderListaStock() {
         || s.nombreSolicitante.toLowerCase().includes(busqueda)
         || labelSector(s.sector).toLowerCase().includes(busqueda)
       );
-    });
+    })
+    .sort((a, b) => (stockTieneItemsUrgentes(b) ? 1 : 0) - (stockTieneItemsUrgentes(a) ? 1 : 0));
 
   if (pedidos.length === 0) {
     contenedor.innerHTML = '<p class="sin-datos">No hay pedidos COMPRA STOCK pendientes de gestión.</p>';
     return;
   }
 
-  contenedor.innerHTML = pedidos.map((s) => `
-    <article class="tarjeta-solicitud estado-autorizado">
-      <div class="tarjeta-header">
-        <span class="tarjeta-numero">Pedido COMPRA STOCK Nº ${escapeHtml(s.numero)}</span>
-        <span class="badge badge-stock">COMPRA STOCK</span>
-      </div>
-      <div class="tarjeta-body">
-        <p><strong>Fecha:</strong> ${formatFecha(s.fecha)}</p>
-        <p><strong>Sector:</strong> ${escapeHtml(labelSector(s.sector))}</p>
-        <p><strong>Solicitante:</strong> ${escapeHtml(s.nombreSolicitante)}</p>
-        <p><strong>Productos:</strong> ${productosValidos(s).length} ítem(s)</p>
-      </div>
-      <div class="tarjeta-acciones">
-        <button type="button" class="btn-ver" data-id="${s.id}">Ver</button>
-        <button type="button" class="btn-tabla-editar" data-id="${s.id}">Editar pedido</button>
-        <button type="button" class="btn-gestionar" data-id="${s.id}">Cerrar pedido</button>
-        <button type="button" class="btn-tabla-borrar" data-id="${s.id}">Eliminar</button>
-      </div>
-    </article>
-  `).join('');
+  const hayUrgentes = pedidos.some(stockTieneItemsUrgentes);
+
+  contenedor.innerHTML = `
+    ${hayUrgentes ? '<p class="aviso-lista-urgente"><span class="alerta-urgente-icon">!</span> Hay pedidos <strong>COMPRA STOCK</strong> con ítems <strong>URGENTES</strong> pendientes de gestión.</p>' : ''}
+    ${pedidos.map((s) => {
+      const urgente = stockTieneItemsUrgentes(s);
+      return `
+      <article class="tarjeta-solicitud estado-autorizado ${urgente ? 'pedido-con-urgente' : ''}">
+        <div class="tarjeta-header">
+          <span class="tarjeta-numero">Pedido COMPRA STOCK Nº ${escapeHtml(s.numero)}</span>
+          <span class="tarjeta-badges">
+            ${urgente ? '<span class="alerta-urgente" title="Contiene ítems urgentes"><span class="alerta-urgente-icon">!</span> URGENTE</span>' : ''}
+            <span class="badge badge-stock">COMPRA STOCK</span>
+          </span>
+        </div>
+        <div class="tarjeta-body">
+          <p><strong>Fecha:</strong> ${formatFecha(s.fecha)}</p>
+          <p><strong>Sector:</strong> ${escapeHtml(labelSector(s.sector))}</p>
+          <p><strong>Solicitante:</strong> ${escapeHtml(s.nombreSolicitante)}</p>
+          <p><strong>Productos:</strong> ${productosValidos(s).length} ítem(s)</p>
+        </div>
+        <div class="tarjeta-acciones">
+          <button type="button" class="btn-ver" data-id="${s.id}">Ver</button>
+          <button type="button" class="btn-tabla-editar" data-id="${s.id}">Editar pedido</button>
+          <button type="button" class="btn-gestionar" data-id="${s.id}">Cerrar pedido</button>
+        </div>
+      </article>
+      `;
+    }).join('')}
+  `;
 
   contenedor.querySelectorAll('.btn-ver').forEach((btn) => {
     btn.addEventListener('click', () => abrirDetalleStock(btn.dataset.id));
@@ -63,9 +78,6 @@ function renderListaStock() {
   });
   contenedor.querySelectorAll('.btn-gestionar').forEach((btn) => {
     btn.addEventListener('click', () => abrirCerrarStock(btn.dataset.id));
-  });
-  contenedor.querySelectorAll('.btn-tabla-borrar').forEach((btn) => {
-    btn.addEventListener('click', () => eliminarPedidoStock(btn.dataset.id));
   });
 }
 
@@ -77,13 +89,13 @@ function abrirDetalleStock(id) {
     <tr>
       <td>${escapeHtml(p.codigo) || '—'}</td>
       <td>${p.cantidad}</td>
-      <td>${escapeHtml(p.descripcion)}</td>
+      <td>${escapeHtml(p.descripcion)}${p.urgente ? ' <span class="urgente-tag">URGENTE</span>' : ''}</td>
       <td>${escapeHtml(p.ref) || '—'}</td>
     </tr>
   `).join('');
 
   document.getElementById('detalleContenido').innerHTML = `
-    <h2>Pedido COMPRA STOCK Nº ${escapeHtml(s.numero)}</h2>
+    <h2>Pedido COMPRA STOCK Nº ${escapeHtml(s.numero)}${stockTieneItemsUrgentes(s) ? ' <span class="urgente-tag">URGENTE</span>' : ''}</h2>
     <div class="detalle-grid">
       <p><strong>Fecha:</strong> ${formatFecha(s.fecha)}</p>
       <p><strong>Sector:</strong> ${escapeHtml(labelSector(s.sector))}</p>
@@ -124,6 +136,7 @@ function abrirEditarStock(id) {
 function agregarFilaEdicion(p = {}) {
   const tbody = document.getElementById('editProductosBody');
   const tr = document.createElement('tr');
+  tr.dataset.urgente = p.urgente ? '1' : '0';
   tr.innerHTML = `
     <td><input type="text" class="edit-codigo" value="${escapeHtml(p.codigo || '')}"></td>
     <td><input type="number" class="edit-cantidad" min="1" value="${p.cantidad || 1}"></td>
@@ -148,7 +161,7 @@ function guardarEdicionStock() {
       codigo: tr.querySelector('.edit-codigo').value.trim(),
       cantidad: parseInt(tr.querySelector('.edit-cantidad').value, 10) || 1,
       descripcion,
-      urgente: false,
+      urgente: tr.dataset.urgente === '1',
       adjuntos: [],
       ref: tr.querySelector('.edit-ref').value.trim(),
     });
@@ -208,21 +221,21 @@ async function confirmarCerrarStock() {
     if (adjunto) cambios.adjuntoOrdenCompra = adjunto;
   }
 
+  const idCerrado = pedidoEditando;
   updateSolicitud(pedidoEditando, cambios);
   cerrarModal('modalCerrarStock');
   const oc = numeroOC;
+  const solicitud = getSolicitudById(idCerrado);
   pedidoEditando = null;
   renderListaStock();
-  mostrarNotificacionPedidoFinalizado(oc);
-}
 
-function eliminarPedidoStock(id) {
-  const s = getSolicitudById(id);
-  if (!s) return;
-  if (!confirm(`¿Eliminar el pedido COMPRA STOCK Nº ${s.numero}? Esta acción no se puede deshacer.`)) return;
-  deleteSolicitud(id);
-  renderListaStock();
-  mostrarToast('Pedido COMPRA STOCK eliminado');
+  const resultado = await notificarSectorPedidoProcesado(solicitud, oc);
+  if (resultado.ok) {
+    mostrarToast(resultado.mensaje || 'Notificación enviada al sector por correo electrónico');
+  } else if (resultado.error) {
+    mostrarToast(`Pedido cerrado. ${resultado.error}`);
+  }
+  mostrarNotificacionPedidoFinalizado(oc);
 }
 
 function initModalesStock() {

@@ -78,6 +78,13 @@
                 <option value="consejo_directivo">Consejo Directivo</option>
               </select>
             </div>
+            <div class="field-group">
+              <label for="filtroComprador">Comprador</label>
+              <select id="filtroComprador" name="comprador">
+                <option value="">Todos los compradores</option>
+                <option value="__sin_asignar__">Sin asignar</option>
+              </select>
+            </div>
             <div class="field-group field-check">
               <label><input type="checkbox" id="filtroSoloUrgente" name="soloUrgente"> Solo con ítems urgentes</label>
             </div>
@@ -111,6 +118,49 @@
     <div class="modal-contenido modal-grande">
       <button type="button" class="modal-cerrar" data-cerrar-modal="modalDetalleHistorico">&times;</button>
       <div id="detalleHistoricoContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalEditarHistorico" class="modal-overlay">
+    <div class="modal-contenido modal-grande">
+      <button type="button" class="modal-cerrar" data-cerrar-modal="modalEditarHistorico">&times;</button>
+      <h2 id="editarHistoricoTitulo">Editar solicitud</h2>
+
+      <div class="admin-form-grid">
+        <div class="field-group">
+          <label for="editHistSector">Sector</label>
+          <select id="editHistSector"></select>
+        </div>
+        <div class="field-group">
+          <label for="editHistSolicitante">Solicitante</label>
+          <input type="text" id="editHistSolicitante">
+        </div>
+        <div class="field-group">
+          <label for="editHistJefeSector">Jefe sector</label>
+          <input type="text" id="editHistJefeSector">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="editHistJustificacion">Justificación pedido</label>
+        <textarea id="editHistJustificacion" rows="2"></textarea>
+      </div>
+
+      <h3 class="subtitulo-tabla">Productos</h3>
+      <div class="table-wrapper">
+        <table class="admin-tabla">
+          <thead>
+            <tr><th>CÓD.</th><th>CANT.</th><th>DESCRIPCIÓN</th><th>REF.</th><th>Urgente</th><th></th></tr>
+          </thead>
+          <tbody id="editHistProductosBody"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btnAgregarFilaEditHist" class="btn-link">+ AGREGAR FILA</button>
+
+      <div class="modal-acciones">
+        <button type="button" id="btnGuardarEdicionHist" class="btn-enviar">Guardar cambios</button>
+        <button type="button" class="btn-secundario" data-cerrar-modal="modalEditarHistorico">Cancelar</button>
+      </div>
     </div>
   </div>
 

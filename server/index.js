@@ -201,6 +201,66 @@ app.post('/api/notificar-sector-autorizacion', async (req, res) => {
   }
 });
 
+app.post('/api/notificar-sector-pedido-procesado', async (req, res) => {
+  const datos = req.body || {};
+  const requeridos = ['destinatario', 'numero', 'sector', 'numeroOrdenCompra'];
+  const faltante = requeridos.find((campo) => !datos[campo]);
+  if (faltante) {
+    return res.status(400).json({ error: `Falta el campo: ${faltante}` });
+  }
+  if (!validarEmail(datos.destinatario)) {
+    return res.status(400).json({ error: 'Correo del destinatario inválido' });
+  }
+
+  const transportador = crearTransportador();
+  if (!transportador) {
+    return res.status(500).json({
+      error: 'Servidor de correo no configurado. Complete SMTP en server/.env',
+    });
+  }
+
+  const asunto = `Solicitud Nº ${datos.numero} — Pedido procesado (OC: ${datos.numeroOrdenCompra})`;
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#222;max-width:640px;">
+      <h2 style="color:#1a4d2e;">Pedido procesado correctamente</h2>
+      <p>Estimado/a sector <strong>${datos.sector}</strong>,</p>
+      <p>Su solicitud Nº <strong>${datos.numero}</strong> fue procesada correctamente.</p>
+      <table style="border-collapse:collapse;width:100%;margin:12px 0;">
+        <tr><td style="padding:4px 0;"><strong>Fecha solicitud:</strong></td><td>${datos.fecha || '—'}</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Solicitante:</strong></td><td>${datos.solicitante || '—'}</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Tipo:</strong></td><td>${datos.tipoPedido || '—'}</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Nº Orden de Compra:</strong></td><td><strong>${datos.numeroOrdenCompra}</strong></td></tr>
+      </table>
+      <p>Consulte a la brevedad en <strong>Proveeduría / Recepción de Insumos</strong>.</p>
+      <p style="font-size:12px;color:#666;margin-top:24px;">Mensaje automático — Solicitud de Compras CASMER / FEPREMI</p>
+    </div>
+  `;
+
+  const textoPlano = [
+    'Pedido procesado correctamente',
+    `Solicitud Nº: ${datos.numero}`,
+    `Sector: ${datos.sector}`,
+    `Solicitante: ${datos.solicitante || '—'}`,
+    `Nº Orden de Compra: ${datos.numeroOrdenCompra}`,
+    'Consulte a la brevedad en Proveeduría / Recepción de Insumos.',
+  ].join('\n');
+
+  try {
+    await transportador.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: datos.destinatario,
+      subject: asunto,
+      text: textoPlano,
+      html,
+    });
+    return res.json({ ok: true, mensaje: 'Notificación enviada al sector correctamente' });
+  } catch (err) {
+    console.error('Error al enviar correo al sector (pedido procesado):', err.message);
+    return res.status(500).json({ error: 'No se pudo enviar el correo. Revise la configuración SMTP.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servicio de correo (API) → http://127.0.0.1:${PORT}`);
   console.log(`  Health check: http://127.0.0.1:${PORT}/api/health`);

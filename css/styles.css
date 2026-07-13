@@ -1347,6 +1347,46 @@ body > * {
   color: #fff;
 }
 
+.btn-icono-accion {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-icono-accion:hover {
+  background: #f0f0f0;
+}
+
+.btn-icono-editar:hover {
+  border-color: var(--azul);
+}
+
+.btn-icono-eliminar:hover {
+  border-color: var(--rojo);
+  background: #fdecea;
+}
+
+.tabla-historico .celda-acciones {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.celda-check-urgente {
+  text-align: center;
+}
+
+.tarjeta-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .paginacion-controles {
   display: flex;
   align-items: center;

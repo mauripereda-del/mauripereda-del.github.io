@@ -66,7 +66,8 @@ function renderListaPedidos() {
         || labelTipoCompra(s.tipoCompra).toLowerCase().includes(busqueda)
         || comprador.includes(busqueda)
       );
-    });
+    })
+    .sort((a, b) => (solicitudTieneItemsUrgentes(b) ? 1 : 0) - (solicitudTieneItemsUrgentes(a) ? 1 : 0));
 
   if (pedidos.length === 0) {
     contenedor.innerHTML = '<p class="sin-datos">No hay pedidos autorizados para gestionar.</p>';
@@ -105,8 +106,6 @@ function renderListaPedidos() {
                 <td class="celda-acciones">
                   <button type="button" class="btn-ver" data-id="${s.id}">Ver pedido</button>
                   <button type="button" class="btn-asignar" data-id="${s.id}">Asignar</button>
-                  <button type="button" class="btn-gestionar" data-id="${s.id}">Gestión pedido</button>
-                  <button type="button" class="btn-imprimir-item" data-id="${s.id}">Imprimir</button>
                 </td>
               </tr>
             `;
@@ -125,15 +124,6 @@ function bindAccionesLista(contenedor) {
   });
   contenedor.querySelectorAll('.btn-asignar').forEach((btn) => {
     btn.addEventListener('click', () => abrirModalAsignar(btn.dataset.id));
-  });
-  contenedor.querySelectorAll('.btn-gestionar').forEach((btn) => {
-    btn.addEventListener('click', () => abrirModalGestion(btn.dataset.id));
-  });
-  contenedor.querySelectorAll('.btn-imprimir-item').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const s = getSolicitudById(btn.dataset.id);
-      if (s) imprimirSolicitud(s);
-    });
   });
 }
 
@@ -233,7 +223,6 @@ function abrirDetallePedido(id) {
       <button type="button" class="btn-gestionar-detalle">Gestión pedido</button>
       <button type="button" class="btn-asignar-detalle">Asignar</button>
       <button type="button" class="btn-imprimir-detalle">Imprimir</button>
-      <button type="button" class="btn-pdf-detalle">PDF</button>
     </div>
   `;
 
@@ -247,7 +236,6 @@ function abrirDetallePedido(id) {
     abrirModalAsignar(s.id);
   });
   contenido.querySelector('.btn-imprimir-detalle')?.addEventListener('click', () => imprimirSolicitud(s));
-  contenido.querySelector('.btn-pdf-detalle')?.addEventListener('click', () => exportarSolicitudPdf(s));
 
   document.getElementById('modalDetalle').classList.add('activo');
 }
@@ -310,12 +298,23 @@ async function cerrarPedidoCompras() {
     if (adjunto) cambios.adjuntoOrdenCompra = adjunto;
   }
 
+  const idCerrado = pedidoActual;
   updateSolicitud(pedidoActual, cambios);
   cerrarModal('modalGestion');
   const oc = numeroOC;
+  const solicitud = getSolicitudById(idCerrado);
   pedidoActual = null;
   renderListaPedidos();
-  mostrarNotificacionPedidoFinalizado(oc);
+  mostrarNotificacionPedidoFinalizado(oc, {
+    onEntendido: async () => {
+      const resultado = await notificarSectorPedidoProcesado(solicitud, oc);
+      if (resultado.ok) {
+        mostrarToast(resultado.mensaje || 'Notificación enviada al sector por correo electrónico');
+      } else if (resultado.error) {
+        mostrarToast(`Pedido cerrado. ${resultado.error}`);
+      }
+    },
+  });
 }
 
 function initModales() {

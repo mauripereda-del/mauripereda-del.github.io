@@ -71,6 +71,35 @@ async function notificarSectorAutorizacion(solicitud, opciones) {
   return enviarNotificacionApi(getApiNotificarSectorUrl(), payload);
 }
 
+function getApiNotificarSectorPedidoProcesadoUrl() {
+  return getApiNotificacionesUrl().replace(
+    '/api/notificar-ordenador',
+    '/api/notificar-sector-pedido-procesado',
+  );
+}
+
+async function notificarSectorPedidoProcesado(solicitud, numeroOC) {
+  const destinatario = getEmailSector(solicitud.sector);
+  if (!destinatario) {
+    return {
+      ok: false,
+      error: `Configure el correo del sector ${labelSector(solicitud.sector)} en Administración`,
+    };
+  }
+
+  const payload = {
+    destinatario,
+    numero: solicitud.numero,
+    fecha: formatFecha(solicitud.fecha),
+    sector: labelSector(solicitud.sector),
+    tipoPedido: labelTipoCompra(solicitud.tipoCompra),
+    solicitante: solicitud.nombreSolicitante,
+    numeroOrdenCompra: numeroOC,
+  };
+
+  return enviarNotificacionApi(getApiNotificarSectorPedidoProcesadoUrl(), payload);
+}
+
 async function enviarNotificacionApi(apiUrl, payload) {
   try {
     const respuesta = await fetch(apiUrl, {

@@ -6,6 +6,7 @@ const REGISTROS_POR_PAGINA = 10;
 
 let resultadosFiltrados = [];
 let paginaActual = 1;
+let historicoEditando = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   renderNav('historico');
@@ -28,6 +29,14 @@ function initFiltrosHistorico() {
   const tipoSelect = document.getElementById('filtroTipo');
   tipoSelect.insertAdjacentHTML('afterbegin', '<option value="">Todos los tipos</option>');
   tipoSelect.value = '';
+
+  const compradorSelect = document.getElementById('filtroComprador');
+  compradorSelect.innerHTML = `
+    <option value="">Todos los compradores</option>
+    <option value="__sin_asignar__">Sin asignar</option>
+    ${getCompradores(true).map((c) => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('')}
+  `;
+  compradorSelect.value = '';
 }
 
 function initAccionesHistorico() {
@@ -39,13 +48,17 @@ function initAccionesHistorico() {
 
   document.getElementById('btnLimpiarFiltros').addEventListener('click', limpiarFiltros);
   document.getElementById('btnExportarExcel').addEventListener('click', exportarHistoricoExcel);
+  document.getElementById('btnGuardarEdicionHist').addEventListener('click', guardarEdicionHistorico);
+  document.getElementById('btnAgregarFilaEditHist').addEventListener('click', () => agregarFilaEdicionHist());
 
   document.querySelectorAll('[data-cerrar-modal]').forEach((btn) => {
     btn.addEventListener('click', () => cerrarModalHistorico(btn.dataset.cerrarModal));
   });
 
-  document.getElementById('modalDetalleHistorico').addEventListener('click', (e) => {
-    if (e.target.id === 'modalDetalleHistorico') cerrarModalHistorico('modalDetalleHistorico');
+  document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) cerrarModalHistorico(overlay.id);
+    });
   });
 }
 
@@ -58,6 +71,7 @@ function limpiarFiltros() {
   document.getElementById('filtroTipo').value = '';
   document.getElementById('filtroEstado').value = '';
   document.getElementById('filtroOrdenador').value = '';
+  document.getElementById('filtroComprador').value = '';
   paginaActual = 1;
   aplicarBusqueda();
 }
@@ -74,6 +88,7 @@ function obtenerFiltros() {
     numero: (fd.get('numero') || '').trim().toLowerCase(),
     solicitante: (fd.get('solicitante') || '').trim().toLowerCase(),
     ordenador: fd.get('ordenador'),
+    comprador: fd.get('comprador'),
     soloUrgente: document.getElementById('filtroSoloUrgente').checked,
   };
 }
@@ -103,6 +118,8 @@ function filtrarSolicitudes(filtros) {
     if (filtros.numero && !String(s.numero).toLowerCase().includes(filtros.numero)) return false;
     if (filtros.solicitante && !(s.nombreSolicitante || '').toLowerCase().includes(filtros.solicitante)) return false;
     if (filtros.ordenador && s.ordenador !== filtros.ordenador) return false;
+    if (filtros.comprador === '__sin_asignar__' && s.compradorId) return false;
+    if (filtros.comprador && filtros.comprador !== '__sin_asignar__' && s.compradorId !== filtros.comprador) return false;
     if (filtros.soloUrgente && !solicitudTieneItemsUrgentes(s)) return false;
     return true;
   });
@@ -251,6 +268,8 @@ function renderTablaHistorico() {
                 <button type="button" class="btn-ver-detalle" data-id="${s.id}" title="Ver detalle">
                   <span aria-hidden="true">👁</span> Ver detalle
                 </button>
+                <button type="button" class="btn-icono-accion btn-icono-editar" data-id="${s.id}" title="Editar solicitud" aria-label="Editar">✏️</button>
+                <button type="button" class="btn-icono-accion btn-icono-eliminar" data-id="${s.id}" title="Eliminar solicitud" aria-label="Eliminar">🗑️</button>
               </td>
             </tr>
           `).join('')}
@@ -261,6 +280,12 @@ function renderTablaHistorico() {
 
   contenedor.querySelectorAll('.btn-ver-detalle').forEach((btn) => {
     btn.addEventListener('click', () => abrirDetalleHistorico(btn.dataset.id));
+  });
+  contenedor.querySelectorAll('.btn-icono-editar').forEach((btn) => {
+    btn.addEventListener('click', () => abrirEditarHistorico(btn.dataset.id));
+  });
+  contenedor.querySelectorAll('.btn-icono-eliminar').forEach((btn) => {
+    btn.addEventListener('click', () => eliminarHistorico(btn.dataset.id));
   });
 
   renderPaginacion(total, totalPaginas);
@@ -345,8 +370,94 @@ function abrirDetalleHistorico(id) {
   document.getElementById('modalDetalleHistorico').classList.add('activo');
 }
 
+function abrirEditarHistorico(id) {
+  historicoEditando = id;
+  const s = getSolicitudById(id);
+  if (!s) return;
+
+  document.getElementById('editarHistoricoTitulo').textContent = `Editar solicitud Nº ${s.numero}`;
+
+  poblarSelectSectores(document.getElementById('editHistSector'), s.sector);
+  document.getElementById('editHistSolicitante').value = s.nombreSolicitante || '';
+  document.getElementById('editHistJefeSector').value = s.jefeSector || '';
+  document.getElementById('editHistJustificacion').value = s.justificacionPedido || '';
+
+  const tbody = document.getElementById('editHistProductosBody');
+  tbody.innerHTML = '';
+  productosValidos(s).forEach((p) => agregarFilaEdicionHist(p));
+  if (!tbody.children.length) agregarFilaEdicionHist();
+
+  document.getElementById('modalEditarHistorico').classList.add('activo');
+}
+
+function agregarFilaEdicionHist(p = {}) {
+  const tbody = document.getElementById('editHistProductosBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="edit-hist-codigo" value="${escapeHtml(p.codigo || '')}"></td>
+    <td><input type="number" class="edit-hist-cantidad" min="1" value="${p.cantidad || 1}"></td>
+    <td><input type="text" class="edit-hist-descripcion" value="${escapeHtml(p.descripcion || '')}"></td>
+    <td><input type="text" class="edit-hist-ref" value="${escapeHtml(p.ref || '')}"></td>
+    <td class="celda-check-urgente"><input type="checkbox" class="edit-hist-urgente" ${p.urgente ? 'checked' : ''}></td>
+    <td><button type="button" class="btn-eliminar-fila">&times;</button></td>
+  `;
+  tr.querySelector('.btn-eliminar-fila').addEventListener('click', () => {
+    if (tbody.children.length > 1) tr.remove();
+  });
+  tbody.appendChild(tr);
+}
+
+function guardarEdicionHistorico() {
+  if (!historicoEditando) return;
+
+  const original = getSolicitudById(historicoEditando);
+  if (!original) return;
+
+  const productos = [];
+  document.querySelectorAll('#editHistProductosBody tr').forEach((tr) => {
+    const descripcion = tr.querySelector('.edit-hist-descripcion').value.trim();
+    if (!descripcion) return;
+    productos.push({
+      codigo: tr.querySelector('.edit-hist-codigo').value.trim(),
+      cantidad: parseInt(tr.querySelector('.edit-hist-cantidad').value, 10) || 1,
+      descripcion,
+      urgente: tr.querySelector('.edit-hist-urgente').checked,
+      adjuntos: [],
+      ref: tr.querySelector('.edit-hist-ref').value.trim(),
+    });
+  });
+
+  if (!productos.length) {
+    alert('Debe haber al menos un producto con descripción.');
+    return;
+  }
+
+  updateSolicitud(historicoEditando, {
+    sector: document.getElementById('editHistSector').value,
+    nombreSolicitante: document.getElementById('editHistSolicitante').value.trim(),
+    jefeSector: document.getElementById('editHistJefeSector').value.trim(),
+    justificacionPedido: document.getElementById('editHistJustificacion').value.trim(),
+    productos,
+  });
+
+  cerrarModalHistorico('modalEditarHistorico');
+  historicoEditando = null;
+  aplicarBusqueda();
+  mostrarToast('Solicitud actualizada');
+}
+
+function eliminarHistorico(id) {
+  const s = getSolicitudById(id);
+  if (!s) return;
+  if (!confirm(`¿Eliminar la solicitud Nº ${s.numero}? Esta acción no se puede deshacer.`)) return;
+  deleteSolicitud(id);
+  aplicarBusqueda();
+  mostrarToast('Solicitud eliminada');
+}
+
 function cerrarModalHistorico(id) {
   document.getElementById(id).classList.remove('activo');
+  if (id === 'modalEditarHistorico') historicoEditando = null;
 }
 
 function exportarHistoricoExcel() {
